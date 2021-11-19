@@ -1,0 +1,4 @@
+﻿Identifier,Base Currency,Quote Currency,Exchange Rate
+EUR_GBP,EUR,GBP,0.84
+EUR_USD,EUR,USD,1.13
+GBP_USD,GBP,USD,1.35
