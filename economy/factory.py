@@ -66,8 +66,3 @@ class EconomyFactory:
         tenors = np.array([self.date_helper.tenor_from_string(x) for x in curve_df.iloc[:, 2]])
         yields = np.array(curve_df.iloc[:, 3])
         return YieldCurve(identifier=identifier, currency=currency, tenors=tenors, yields=yields)
-
-
-if __name__ == "__main__":
-    economy_path = "C:/Users/robin/Desktop/Repos/cash-or-derivative/io/input/economy/"
-    test = EconomyFactory().create_economy(datetime(2020, 1, 1), economy_path)

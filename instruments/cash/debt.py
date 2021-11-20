@@ -7,6 +7,7 @@ from instruments.cash.base import CashInstrument
 from economy.observables.interest_rate import InterestRate
 from utils.dates import DateScheduleGenerator, DateSchedule
 from utils.cash_flows import CashFlowSchedule
+from economy.base import Economy
 from economy.term_structures.yield_curve import YieldCurve
 
 
@@ -16,6 +17,7 @@ class Loan(CashInstrument, metaclass=ABCMeta):
             self,
             instrument_level_3: InstrumentLevel3,
             quote_currency: str,
+            discount_curve_id: str,
             tradeable: bool,
             notional: float,
             start_date: datetime,
@@ -36,6 +38,7 @@ class Loan(CashInstrument, metaclass=ABCMeta):
         self.payment_freq = payment_freq
         self.schedule_generator = DateScheduleGenerator(payment_freq)
         self.date_schedule = self.schedule_generator.date_schedule(start_date, maturity_date)
+        self.discount_curve_id = discount_curve_id
 
     @abstractmethod
     def _generate_cash_flows(self, *args) -> CashFlowSchedule:
@@ -51,6 +54,7 @@ class FixedRateLoan(Loan):
             self,
             instrument_level_3: InstrumentLevel3,
             quote_currency: str,
+            discount_curve_id: str,
             tradeable: bool,
             notional: float,
             start_date: datetime,
@@ -62,6 +66,7 @@ class FixedRateLoan(Loan):
         super().__init__(
             instrument_level_3=instrument_level_3,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             tradeable=tradeable,
             notional=notional,
             start_date=start_date,
@@ -70,6 +75,11 @@ class FixedRateLoan(Loan):
         )
 
         self.fixed_rate = fixed_rate
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        return self.value(current_date, discount_curve)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve) -> float:
         cash_flows = self._generate_cash_flows(current_date)
@@ -97,6 +107,8 @@ class FloatingRateLoan(Loan):
             self,
             instrument_level_3: InstrumentLevel3,
             quote_currency: str,
+            discount_curve_id: str,
+            forecast_curve_id: str,
             tradeable: bool,
             notional: float,
             start_date: datetime,
@@ -107,12 +119,21 @@ class FloatingRateLoan(Loan):
         super().__init__(
             instrument_level_3=instrument_level_3,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             tradeable=tradeable,
             notional=notional,
             start_date=start_date,
             maturity_date=maturity_date,
             payment_freq=payment_freq
         )
+
+        self.forecast_curve_id = forecast_curve_id
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        forecast_curve = economy.yield_curves[self.forecast_curve_id]
+        return self.value(current_date, discount_curve, forecast_curve)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve, forecast_curve: YieldCurve) -> float:
         cash_flows = self._generate_cash_flows(current_date, forecast_curve)
@@ -138,6 +159,7 @@ class ZeroCouponBond(Loan):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
             notional: float,
             start_date: datetime,
             maturity_date: datetime
@@ -146,12 +168,18 @@ class ZeroCouponBond(Loan):
         super().__init__(
             instrument_level_3=InstrumentLevel3.ZeroCouponBond,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             tradeable=True,
             notional=notional,
             start_date=start_date,
             maturity_date=maturity_date,
             payment_freq="Single"
         )
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        return self.value(current_date, discount_curve)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve) -> float:
         cash_flows = self._generate_cash_flows(current_date)
@@ -179,6 +207,7 @@ class FixedRateBond(FixedRateLoan):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
             notional: float,
             start_date: datetime,
             maturity_date: datetime,
@@ -189,6 +218,7 @@ class FixedRateBond(FixedRateLoan):
         super().__init__(
             instrument_level_3=InstrumentLevel3.FixedRateBond,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             tradeable=True,
             notional=notional,
             start_date=start_date,
@@ -229,6 +259,8 @@ class FloatingRateBond(FloatingRateLoan):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
+            forecast_curve_id: str,
             notional: float,
             start_date: datetime,
             maturity_date: datetime,
@@ -238,6 +270,8 @@ class FloatingRateBond(FloatingRateLoan):
         super().__init__(
             instrument_level_3=InstrumentLevel3.FloatingRateBond,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
+            forecast_curve_id=forecast_curve_id,
             tradeable=True,
             notional=notional,
             start_date=start_date,
@@ -258,6 +292,7 @@ class FixedLeg(FixedRateLoan):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
             notional: float,
             start_date: datetime,
             maturity_date: datetime,
@@ -268,6 +303,7 @@ class FixedLeg(FixedRateLoan):
         super().__init__(
             instrument_level_3=InstrumentLevel3.FixedLeg,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             tradeable=False,
             notional=notional,
             start_date=start_date,
@@ -294,6 +330,8 @@ class FloatingLeg(FloatingRateLoan):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
+            forecast_curve_id: str,
             notional: float,
             start_date: datetime,
             maturity_date: datetime,
@@ -303,6 +341,8 @@ class FloatingLeg(FloatingRateLoan):
         super().__init__(
             instrument_level_3=InstrumentLevel3.FloatingLeg,
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
+            forecast_curve_id=forecast_curve_id,
             tradeable=False,
             notional=notional,
             start_date=start_date,

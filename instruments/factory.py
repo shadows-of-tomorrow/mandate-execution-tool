@@ -1,9 +1,8 @@
 from datetime import datetime
-from typing import Union
 
+from economy.base import Economy
 from economy.observables.interest_rate import InterestRate
 from economy.observables.exchange_rate import ExchangeRate
-from economy.term_structures.yield_curve import YieldCurve
 from instruments.base import Instrument, InstrumentLevel3
 from instruments.cash.equity import Share, Stock
 from instruments.cash.debt import ZeroCouponBond, FixedRateBond, FloatingRateBond
@@ -49,80 +48,77 @@ class InstrumentFactory:
         return Stock(quote_currency=quote_currency, ticker_symbol=ticker_symbol, number_of_shares=number_of_shares)
 
     @staticmethod
-    def _create_zero_coupon_bond(quote_currency: str, notional: int, start_date: datetime,
-                                 maturity_date: datetime) -> ZeroCouponBond:
-        return ZeroCouponBond(quote_currency=quote_currency, notional=notional, start_date=start_date,
-                              maturity_date=maturity_date)
+    def _create_zero_coupon_bond(quote_currency: str, discount_curve_id: str, notional: int,
+                                 start_date: datetime, maturity_date: datetime) -> ZeroCouponBond:
+        return ZeroCouponBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id, notional=notional,
+                              start_date=start_date, maturity_date=maturity_date)
 
     @staticmethod
-    def _create_fixed_rate_bond(quote_currency: str, notional: int, start_date: datetime,
+    def _create_fixed_rate_bond(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime,
                                 maturity_date: datetime, payment_freq: str, fixed_rate: float) -> FixedRateBond:
-        return FixedRateBond(quote_currency=quote_currency, notional=notional, start_date=start_date,
-                             maturity_date=maturity_date, payment_freq=payment_freq,
-                             fixed_rate=InterestRate(identifier="FIXED_RATE", value=fixed_rate))
+        return FixedRateBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
+                             notional=notional, start_date=start_date, maturity_date=maturity_date, payment_freq=payment_freq,
+                             fixed_rate=InterestRate(identifier="FIXED_RATE", currency=quote_currency, value=fixed_rate))
 
     @staticmethod
-    def _create_floating_rate_bond(quote_currency: str, notional: int, start_date: datetime,
-                                   maturity_date: datetime, payment_freq: str) -> FloatingRateBond:
-        return FloatingRateBond(quote_currency=quote_currency, notional=notional, start_date=start_date,
-                                maturity_date=maturity_date, payment_freq=payment_freq)
+    def _create_floating_rate_bond(quote_currency: str, discount_curve_id: str, forecast_curve_id: str,
+                                   notional: int, start_date: datetime, maturity_date: datetime, payment_freq: str) -> FloatingRateBond:
+        return FloatingRateBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id, forecast_curve_id=forecast_curve_id,
+                                notional=notional, start_date=start_date, maturity_date=maturity_date, payment_freq=payment_freq)
 
     @staticmethod
-    def _create_equity_forward(quote_currency: str, notional: int, start_date: datetime,
-                               maturity_date: datetime, underlying: Union[Share, Stock],
-                               discount_curve: YieldCurve = None, share_price: float = None,
+    def _create_equity_forward(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime,
+                               maturity_date: datetime, underlying: Share, economy: Economy,
                                forward_price: float = None) -> EquityForward:
-        return EquityForward(quote_currency=quote_currency, notional=notional, start_date=start_date,
-                             maturity_date=maturity_date, underlying=underlying, discount_curve=discount_curve,
-                             forward_price=forward_price, share_price=share_price)
+        return EquityForward(quote_currency=quote_currency, discount_curve_id=discount_curve_id, notional=notional,
+                             start_date=start_date, maturity_date=maturity_date, underlying=underlying, economy=economy,
+                             forward_price=forward_price)
 
     @staticmethod
-    def _create_forward_rate_agreement(quote_currency: str, notional: int, start_date: datetime,
-                                       accrual_start_date: datetime, accrual_end_date: datetime,
-                                       underlying: InterestRate, forecast_curve: YieldCurve = None,
-                                       forward_price: float = None) -> ForwardRateAgreement:
-        return ForwardRateAgreement(quote_currency=quote_currency, notional=notional, start_date=start_date,
+    def _create_forward_rate_agreement(quote_currency: str, discount_curve_id: str, forecast_curve_id: str,
+                                       notional: int, start_date: datetime, accrual_start_date: datetime,
+                                       accrual_end_date: datetime, underlying: InterestRate,
+                                       economy: Economy = None, forward_price: float = None) -> ForwardRateAgreement:
+        return ForwardRateAgreement(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
+                                    forecast_curve_id=forecast_curve_id, notional=notional, start_date=start_date,
                                     accrual_start_date=accrual_start_date, accrual_end_date=accrual_end_date,
-                                    underlying=underlying, forecast_curve=forecast_curve, forward_price=forward_price)
+                                    underlying=underlying, economy=economy, forward_price=forward_price)
 
     @staticmethod
-    def _create_currency_forward(quote_currency: str, base_currency: str, notional: int,
+    def _create_currency_forward(quote_currency: str, discount_curve_quote_id: str, discount_curve_base_id: str,
+                                 base_currency: str, notional: int,
                                  start_date: datetime, maturity_date: datetime, underlying: ExchangeRate,
-                                 discount_curve_quote: YieldCurve = None, discount_curve_base: YieldCurve = None,
-                                 spot_rate: float = None, forward_price: float = None) -> CurrencyForward:
-        return CurrencyForward(quote_currency=quote_currency, base_currency=base_currency, notional=notional,
-                               start_date=start_date, maturity_date=maturity_date, underlying=underlying,
-                               discount_curve_quote=discount_curve_quote, discount_curve_base=discount_curve_base,
-                               spot_rate=spot_rate, forward_price=forward_price)
+                                 economy: Economy, forward_price: float = None) -> CurrencyForward:
+        return CurrencyForward(quote_currency=quote_currency, base_currency=base_currency,
+                               notional=notional, start_date=start_date, maturity_date=maturity_date, underlying=underlying,
+                               discount_curve_quote_id=discount_curve_quote_id, discount_curve_base_id=discount_curve_base_id,
+                               economy=economy, forward_price=forward_price)
 
     @staticmethod
-    def _create_equity_future(quote_currency: str, notional: int, start_date: datetime, maturity_date: datetime,
-                              underlying: Union[Share, Stock], initial_margin_rate: float, maintenance_margin_rate: float,
-                              discount_curve: YieldCurve = None, share_price: float = None,
-                              future_price: float = None) -> EquityFuture:
-        return EquityFuture(quote_currency=quote_currency, notional=notional, start_date=start_date,
+    def _create_equity_future(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime, maturity_date: datetime,
+                              underlying: Share, initial_margin_rate: float, maintenance_margin_rate: float,
+                              economy: Economy, future_price: float = None) -> EquityFuture:
+        return EquityFuture(quote_currency=quote_currency, discount_curve_id=discount_curve_id, notional=notional, start_date=start_date,
                             maturity_date=maturity_date, underlying=underlying, initial_margin_rate=initial_margin_rate,
-                            maintenance_margin_rate=maintenance_margin_rate, discount_curve=discount_curve,
-                            share_price=share_price, future_price=future_price)
+                            maintenance_margin_rate=maintenance_margin_rate, economy=economy, future_price=future_price)
 
     @staticmethod
-    def _create_eurodollar_future(quote_currency: str, notional: int, start_date: datetime, accrual_start_date: datetime,
+    def _create_eurodollar_future(quote_currency: str, forecast_curve_id: str, notional: int, start_date: datetime, accrual_start_date: datetime,
                                   accrual_end_date: datetime, underlying: InterestRate, initial_margin_rate: float,
-                                  maintenance_margin_rate: float, forecast_curve: YieldCurve = None,
-                                  future_price: float = None) -> EuroDollarFuture:
-        return EuroDollarFuture(quote_currency=quote_currency, notional=notional, start_date=start_date,
+                                  maintenance_margin_rate: float, economy: Economy, future_price: float = None) -> EuroDollarFuture:
+        return EuroDollarFuture(quote_currency=quote_currency, forecast_curve_id=forecast_curve_id, notional=notional, start_date=start_date,
                                 accrual_start_date=accrual_start_date, accrual_end_date=accrual_end_date,
                                 underlying=underlying, initial_margin_rate=initial_margin_rate,
-                                maintenance_margin_rate=maintenance_margin_rate, forecast_curve=forecast_curve,
+                                maintenance_margin_rate=maintenance_margin_rate, economy=economy,
                                 future_price=future_price)
 
     @staticmethod
-    def _create_interest_rate_swap(quote_currency: str, notional: int, start_date: datetime, maturity_date: datetime,
+    def _create_interest_rate_swap(quote_currency: str, discount_curve_id: str, forecast_curve_id: str, notional: int,
+                                   start_date: datetime, maturity_date: datetime,
                                    underlying: InterestRate, payment_freq_fixed: str, payment_freq_float: str,
-                                   swap_type: str, discount_curve: YieldCurve = None, forecast_curve: YieldCurve = None,
-                                   swap_rate: float = None) -> InterestRateSwap:
-        return InterestRateSwap(quote_currency=quote_currency, notional=notional, start_date=start_date,
+                                   swap_type: str, economy: Economy, swap_rate: float = None) -> InterestRateSwap:
+        return InterestRateSwap(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
+                                forecast_curve_id=forecast_curve_id, notional=notional, start_date=start_date,
                                 maturity_date=maturity_date, underlying=underlying,
                                 payment_freq_fixed=payment_freq_fixed, payment_freq_float=payment_freq_float,
-                                swap_type=swap_type, discount_curve=discount_curve, forecast_curve=forecast_curve,
-                                swap_rate=swap_rate)
+                                swap_type=swap_type, economy=economy, swap_rate=swap_rate)

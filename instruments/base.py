@@ -5,6 +5,7 @@ This module contains the fundamental building blocks of financial instruments.
 from enum import Enum
 from abc import ABC, abstractmethod
 
+from economy.base import Economy
 
 class InstrumentLevel1(Enum):
 
@@ -67,6 +68,10 @@ class Instrument(ABC):
         self.instrument_level_2 = instrument_level_2
         self.instrument_level_3 = instrument_level_3
         self.tradeable = tradeable
+
+    @abstractmethod
+    def value_from_economy(self, economy: Economy) -> float:
+        pass
 
     @abstractmethod
     def value(self, *args, **kwargs) -> float:

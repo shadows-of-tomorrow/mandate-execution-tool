@@ -8,6 +8,7 @@ from economy.observables.exchange_rate import ExchangeRate
 from utils.dates import DateHelper
 from instruments.base import Instrument, InstrumentLevel2, InstrumentLevel3
 from instruments.cash.equity import Share, Stock
+from economy.base import Economy
 from economy.term_structures.yield_curve import YieldCurve
 from instruments.derivatives.base import DerivativeInstrument
 
@@ -50,12 +51,12 @@ class EquityForward(Forward):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
             notional: int,
             start_date: datetime,
             maturity_date: datetime,
-            underlying: Union[Share, Stock],
-            discount_curve: YieldCurve = None,
-            share_price: float = None,
+            underlying: Share,
+            economy: Economy = None,
             forward_price: float = None
     ) -> None:
 
@@ -69,10 +70,14 @@ class EquityForward(Forward):
             underlying=underlying
         )
 
-        self.forward_price = self._initialize_forward_price(discount_curve, share_price, forward_price)
+        self.discount_curve_id = discount_curve_id
+        self.ticker_symbol = underlying.ticker_symbol
+        self.forward_price = self._initialize_forward_price(economy, forward_price)
 
-    def _initialize_forward_price(self, discount_curve: YieldCurve, share_price: float, forward_price: float) -> float:
+    def _initialize_forward_price(self, economy: Economy, forward_price: float) -> float:
         if forward_price is None:
+            discount_curve = economy.yield_curves[self.discount_curve_id]
+            share_price = economy.share_prices[self.ticker_symbol].value
             forward_price = self._get_forward_price(self.start_date, discount_curve, share_price)
         return forward_price
 
@@ -80,6 +85,12 @@ class EquityForward(Forward):
         discount_factor = discount_curve.discount_factor(current_date, self.maturity_date)
         forward_price = self.underlying.value(share_price) / discount_factor
         return forward_price
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        share_price = economy.share_prices[self.ticker_symbol].value
+        return self.value(current_date, discount_curve, share_price)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve, share_price: float) -> float:
         assert current_date >= self.start_date
@@ -101,12 +112,14 @@ class ForwardRateAgreement(Forward):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
+            forecast_curve_id: str,
             notional: int,
             start_date: datetime,
             accrual_start_date: datetime,
             accrual_end_date: datetime,
             underlying: InterestRate,
-            forecast_curve: YieldCurve = None,
+            economy: Economy = None,
             forward_price: float = None
     ) -> None:
 
@@ -120,18 +133,27 @@ class ForwardRateAgreement(Forward):
             underlying=underlying
         )
 
+        self.discount_curve_id = discount_curve_id
+        self.forecast_curve_id = forecast_curve_id
         self.accrual_end_date = accrual_end_date
         self.accrual_factor = DateHelper().accrual_factor(accrual_start_date, accrual_end_date)
-        self.forward_price = self._initialize_forward_price(forecast_curve, forward_price)
+        self.forward_price = self._initialize_forward_price(economy, forward_price)
 
-    def _initialize_forward_price(self, forecast_curve: YieldCurve, forward_price: float) -> float:
+    def _initialize_forward_price(self, economy: Economy, forward_price: float) -> float:
         if forward_price is None:
+            forecast_curve = economy.yield_curves[self.forecast_curve_id]
             forward_price = self._get_forward_price(self.start_date, forecast_curve)
         return forward_price
 
     def _get_forward_price(self, current_date: datetime, forecast_curve: YieldCurve) -> float:
         forward_price = forecast_curve.forward_rate(current_date, self.maturity_date, self.accrual_end_date)
         return forward_price
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        forecast_curve = economy.yield_curves[self.forecast_curve_id]
+        return self.value(current_date, discount_curve, forecast_curve)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve, forecast_curve: YieldCurve) -> float:
         assert current_date >= self.start_date
@@ -157,13 +179,13 @@ class CurrencyForward(Forward):
             self,
             quote_currency: str,
             base_currency: str,
+            discount_curve_quote_id: str,
+            discount_curve_base_id: str,
             notional: int,
             start_date: datetime,
             maturity_date: datetime,
             underlying: ExchangeRate,
-            discount_curve_quote: YieldCurve = None,
-            discount_curve_base: YieldCurve = None,
-            spot_rate: float = None,
+            economy: Economy = None,
             forward_price: float = None
     ) -> None:
 
@@ -177,42 +199,36 @@ class CurrencyForward(Forward):
             underlying=underlying
         )
 
+        self.discount_curve_quote_id = discount_curve_quote_id
+        self.discount_curve_base_id = discount_curve_base_id
+        self.exchange_rate_id = underlying.identifier
         self.base_currency = base_currency
-        self.forward_price = self._initialize_forward_price(discount_curve_quote, discount_curve_base, spot_rate, forward_price)
+        self.forward_price = self._initialize_forward_price(economy, forward_price)
 
-    def _initialize_forward_price(
-            self,
-            discount_curve_quote: YieldCurve,
-            discount_curve_base: YieldCurve,
-            spot_rate: float,
-            forward_price: float
-    ) -> float:
-
+    def _initialize_forward_price(self, economy: Economy, forward_price: float) -> float:
         if forward_price is None:
+            discount_curve_quote = economy.yield_curves[self.discount_curve_quote_id]
+            discount_curve_base = economy.yield_curves[self.discount_curve_base_id]
+            spot_rate = economy.exchange_rates[self.exchange_rate_id].value
             forward_price = self._get_forward_price(self.start_date, discount_curve_quote, discount_curve_base, spot_rate)
         return forward_price
 
-    def _get_forward_price(
-            self,
-            current_date: datetime,
-            discount_curve_quote: YieldCurve,
-            discount_curve_base: YieldCurve,
-            spot_rate: float
-    ) -> float:
-
+    def _get_forward_price(self, current_date: datetime, discount_curve_quote: YieldCurve,
+                           discount_curve_base: YieldCurve, spot_rate: float) -> float:
         discount_factor_quote = discount_curve_quote.discount_factor(current_date, self.maturity_date)
         discount_factor_base = discount_curve_base.discount_factor(current_date, self.maturity_date)
         forward_price = spot_rate * (discount_factor_base/discount_factor_quote)
         return forward_price
 
-    def value(
-            self,
-            current_date: datetime,
-            discount_curve_quote: YieldCurve,
-            discount_curve_base: YieldCurve,
-            spot_rate: float
-    ) -> float:
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve_quote = economy.yield_curves[self.discount_curve_quote_id]
+        discount_curve_base = economy.yield_curves[self.discount_curve_base_id]
+        spot_rate = economy.exchange_rates[self.exchange_rate_id].value
+        return self.value(current_date, discount_curve_quote, discount_curve_base, spot_rate)
 
+    def value(self, current_date: datetime, discount_curve_quote: YieldCurve, discount_curve_base: YieldCurve,
+              spot_rate: float) -> float:
         assert current_date >= self.start_date
         discount_factor_quote = discount_curve_quote.discount_factor(current_date, self.maturity_date)
         new_forward_price = self._get_forward_price(current_date, discount_curve_quote, discount_curve_base, spot_rate)

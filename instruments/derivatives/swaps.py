@@ -8,6 +8,7 @@ from economy.observables.interest_rate import InterestRate
 from instruments.base import Instrument, InstrumentLevel2, InstrumentLevel3
 from instruments.cash.debt import FixedLeg, FloatingLeg
 from instruments.derivatives.base import DerivativeInstrument
+from economy.base import Economy
 from economy.term_structures.yield_curve import YieldCurve
 
 
@@ -58,6 +59,8 @@ class InterestRateSwap(Swap):
     def __init__(
             self,
             quote_currency: str,
+            discount_curve_id: str,
+            forecast_curve_id: str,
             notional: int,
             start_date: datetime,
             maturity_date: datetime,
@@ -65,8 +68,7 @@ class InterestRateSwap(Swap):
             payment_freq_fixed: str,
             payment_freq_float: str,
             swap_type: str,
-            discount_curve: YieldCurve = None,
-            forecast_curve: YieldCurve = None,
+            economy: Economy = None,
             swap_rate: float = None
     ) -> None:
 
@@ -82,27 +84,34 @@ class InterestRateSwap(Swap):
 
         self.fixed_leg = FixedLeg(
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
             notional=notional,
             start_date=start_date,
             maturity_date=maturity_date,
             payment_freq=payment_freq_fixed,
-            fixed_rate=InterestRate(identifier="FIX", value=1.0)  # Init used for swap rate calculation.
+            fixed_rate=InterestRate(identifier="FIX", value=1.0, currency=self.quote_currency)  # Init used for swap rate calculation.
         )
 
         self.floating_leg = FloatingLeg(
             quote_currency=quote_currency,
+            discount_curve_id=discount_curve_id,
+            forecast_curve_id=forecast_curve_id,
             notional=notional,
             start_date=start_date,
             maturity_date=maturity_date,
             payment_freq=payment_freq_float
         )
 
+        self.discount_curve_id = discount_curve_id
+        self.forecast_curve_id = forecast_curve_id
         self.swap_type = swap_type
-        self.swap_rate = self._initialize_swap_price(discount_curve, forecast_curve, swap_rate)
+        self.swap_rate = self._initialize_swap_price(economy, swap_rate)
         self.fixed_leg.fixed_rate.value = self.swap_rate
 
-    def _initialize_swap_price(self, discount_curve: YieldCurve, forecast_curve: YieldCurve, swap_rate: float) -> float:
+    def _initialize_swap_price(self, economy: Economy, swap_rate: float) -> float:
         if swap_rate is None:
+            discount_curve = economy.yield_curves[self.discount_curve_id]
+            forecast_curve = economy.yield_curves[self.forecast_curve_id]
             swap_rate = self._get_swap_price(discount_curve, forecast_curve)
         return swap_rate
 
@@ -110,6 +119,12 @@ class InterestRateSwap(Swap):
         fixed_leg_value = self.fixed_leg.value(self.start_date, discount_curve)
         float_leg_value = self.floating_leg.value(self.start_date, discount_curve, forecast_curve)
         return float_leg_value / fixed_leg_value
+
+    def value_from_economy(self, economy: Economy) -> float:
+        current_date = economy.current_date
+        discount_curve = economy.yield_curves[self.discount_curve_id]
+        forecast_curve = economy.yield_curves[self.forecast_curve_id]
+        return self.value(current_date, discount_curve, forecast_curve)
 
     def value(self, current_date: datetime, discount_curve: YieldCurve, forecast_curve: YieldCurve) -> float:
         fixed_leg_value = self.fixed_leg.value(current_date, discount_curve)
