@@ -26,7 +26,11 @@ class YieldCurve:
         # Todo: Obviously not the right way to go about this.
         self.old_fixing = 0.02
 
-    def bump(self, idx: int, bump_size: float = 0.0001) -> None:
+    def bump_tenor(self, tenor: float, bump_size: float = 0.0001) -> None:
+        idx = np.abs(self.tenors-tenor).argmin()
+        return self.bump_idx(idx, bump_size)
+
+    def bump_idx(self, idx: int, bump_size: float = 0.0001) -> None:
         # Todo: Allow for linear interpolation between tenor points.
         self.yields[idx] += bump_size
         self.spline = self._fit_spline()

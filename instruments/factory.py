@@ -57,14 +57,19 @@ class InstrumentFactory:
     def _create_fixed_rate_bond(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime,
                                 maturity_date: datetime, payment_freq: str, fixed_rate: float) -> FixedRateBond:
         return FixedRateBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
-                             notional=notional, start_date=start_date, maturity_date=maturity_date, payment_freq=payment_freq,
-                             fixed_rate=InterestRate(identifier="FIXED_RATE", currency=quote_currency, value=fixed_rate))
+                             notional=notional, start_date=start_date, maturity_date=maturity_date,
+                             payment_freq=payment_freq,
+                             fixed_rate=InterestRate(identifier="FIXED_RATE", currency=quote_currency,
+                                                     value=fixed_rate))
 
     @staticmethod
     def _create_floating_rate_bond(quote_currency: str, discount_curve_id: str, forecast_curve_id: str,
-                                   notional: int, start_date: datetime, maturity_date: datetime, payment_freq: str) -> FloatingRateBond:
-        return FloatingRateBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id, forecast_curve_id=forecast_curve_id,
-                                notional=notional, start_date=start_date, maturity_date=maturity_date, payment_freq=payment_freq)
+                                   notional: int, start_date: datetime, maturity_date: datetime,
+                                   payment_freq: str) -> FloatingRateBond:
+        return FloatingRateBond(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
+                                forecast_curve_id=forecast_curve_id,
+                                notional=notional, start_date=start_date, maturity_date=maturity_date,
+                                payment_freq=payment_freq)
 
     @staticmethod
     def _create_equity_forward(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime,
@@ -90,23 +95,30 @@ class InstrumentFactory:
                                  start_date: datetime, maturity_date: datetime, underlying: ExchangeRate,
                                  economy: Economy, forward_price: float = None) -> CurrencyForward:
         return CurrencyForward(quote_currency=quote_currency, base_currency=base_currency,
-                               notional=notional, start_date=start_date, maturity_date=maturity_date, underlying=underlying,
-                               discount_curve_quote_id=discount_curve_quote_id, discount_curve_base_id=discount_curve_base_id,
+                               notional=notional, start_date=start_date, maturity_date=maturity_date,
+                               underlying=underlying,
+                               discount_curve_quote_id=discount_curve_quote_id,
+                               discount_curve_base_id=discount_curve_base_id,
                                economy=economy, forward_price=forward_price)
 
     @staticmethod
-    def _create_equity_future(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime, maturity_date: datetime,
+    def _create_equity_future(quote_currency: str, discount_curve_id: str, notional: int, start_date: datetime,
+                              maturity_date: datetime,
                               underlying: Share, initial_margin_rate: float, maintenance_margin_rate: float,
                               economy: Economy, future_price: float = None) -> EquityFuture:
-        return EquityFuture(quote_currency=quote_currency, discount_curve_id=discount_curve_id, notional=notional, start_date=start_date,
+        return EquityFuture(quote_currency=quote_currency, discount_curve_id=discount_curve_id, notional=notional,
+                            start_date=start_date,
                             maturity_date=maturity_date, underlying=underlying, initial_margin_rate=initial_margin_rate,
                             maintenance_margin_rate=maintenance_margin_rate, economy=economy, future_price=future_price)
 
     @staticmethod
-    def _create_eurodollar_future(quote_currency: str, forecast_curve_id: str, notional: int, start_date: datetime, accrual_start_date: datetime,
+    def _create_eurodollar_future(quote_currency: str, forecast_curve_id: str, notional: int, start_date: datetime,
+                                  accrual_start_date: datetime,
                                   accrual_end_date: datetime, underlying: InterestRate, initial_margin_rate: float,
-                                  maintenance_margin_rate: float, economy: Economy, future_price: float = None) -> EuroDollarFuture:
-        return EuroDollarFuture(quote_currency=quote_currency, forecast_curve_id=forecast_curve_id, notional=notional, start_date=start_date,
+                                  maintenance_margin_rate: float, economy: Economy,
+                                  future_price: float = None) -> EuroDollarFuture:
+        return EuroDollarFuture(quote_currency=quote_currency, forecast_curve_id=forecast_curve_id, notional=notional,
+                                start_date=start_date,
                                 accrual_start_date=accrual_start_date, accrual_end_date=accrual_end_date,
                                 underlying=underlying, initial_margin_rate=initial_margin_rate,
                                 maintenance_margin_rate=maintenance_margin_rate, economy=economy,
@@ -117,6 +129,7 @@ class InstrumentFactory:
                                    start_date: datetime, maturity_date: datetime,
                                    underlying: InterestRate, payment_freq_fixed: str, payment_freq_float: str,
                                    swap_type: str, economy: Economy, swap_rate: float = None) -> InterestRateSwap:
+
         return InterestRateSwap(quote_currency=quote_currency, discount_curve_id=discount_curve_id,
                                 forecast_curve_id=forecast_curve_id, notional=notional, start_date=start_date,
                                 maturity_date=maturity_date, underlying=underlying,

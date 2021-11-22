@@ -1,0 +1,8 @@
+﻿Identifier,ExposureType,Curve,Tenor,Target
+Asset Allocation Equity (%),AssetAllocationEquity,,,200000
+Asset Allocation Debt (%),AssetAllocationDebt,,,200000
+EONIA Zero Delta 1M,ZeroDelta,EUR_EONIA_1D,0.083333333,1000
+EONIA Zero Delta 2M,ZeroDelta,EUR_EONIA_1D,0.166666667,100000
+EONIA Zero Delta 3M,ZeroDelta,EUR_EONIA_1D,0.25,100000
+EONIA Zero Delta 6M,ZeroDelta,EUR_EONIA_1D,0.5,200000
+EONIA Zero Delta 12M,ZeroDelta,EUR_EONIA_1D,1,400000

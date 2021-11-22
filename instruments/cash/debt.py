@@ -92,14 +92,6 @@ class FixedRateLoan(Loan):
             cash_flows[-1] += self.notional
         return CashFlowSchedule(schedule.payment_dates, cash_flows)
 
-    def __repr__(self):
-        return f"FixedRateLoan" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}" \
-               f"_{self.fixed_rate.value}"
-
 
 class FloatingRateLoan(Loan):
 
@@ -146,13 +138,6 @@ class FloatingRateLoan(Loan):
         cash_flows[-1] += self.notional
         return CashFlowSchedule(schedule.payment_dates, cash_flows)
 
-    def __repr__(self):
-        return f"FloatingRateLoan" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}"
-
 
 class ZeroCouponBond(Loan):
 
@@ -194,12 +179,6 @@ class ZeroCouponBond(Loan):
         else:
             raise ValueError(f"Zero coupon bond can not have more than one payment.")
         return CashFlowSchedule(schedule.payment_dates, cash_flows)
-
-    def __repr__(self) -> str:
-        return f"ZeroCouponBond" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}"
 
 
 class FixedRateBond(FixedRateLoan):
@@ -245,13 +224,6 @@ class FixedRateBond(FixedRateLoan):
         accrued_interest = self._accrued_interest(current_date)
         return dirty_price - accrued_interest
 
-    def __repr__(self) -> str:
-        return f"FixedRateBond" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}" \
-               f"_{self.fixed_rate.value}"
 
 
 class FloatingRateBond(FloatingRateLoan):
@@ -279,12 +251,6 @@ class FloatingRateBond(FloatingRateLoan):
             payment_freq=payment_freq
         )
 
-    def __repr__(self) -> str:
-        return f"FloatingRateBond" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}"
 
 
 class FixedLeg(FixedRateLoan):
@@ -317,13 +283,6 @@ class FixedLeg(FixedRateLoan):
         cash_flows = self.notional * schedule.year_fractions * self.fixed_rate.value
         return CashFlowSchedule(schedule.payment_dates, cash_flows)
 
-    def __repr__(self) -> str:
-        return f"FixedLeg" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}"
-
 
 class FloatingLeg(FloatingRateLoan):
 
@@ -355,10 +314,3 @@ class FloatingLeg(FloatingRateLoan):
         forward_rates = forecast_curve.forward_rate_strip(current_date, self.start_date, schedule.payment_dates)
         cash_flows = self.notional * schedule.year_fractions * forward_rates
         return CashFlowSchedule(schedule.payment_dates, cash_flows)
-
-    def __repr__(self) -> str:
-        return f"FloatingLeg" \
-               f"_{self.start_date}" \
-               f"_{self.maturity_date}" \
-               f"_{self.notional}" \
-               f"_{self.payment_freq}"

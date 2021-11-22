@@ -23,9 +23,6 @@ class Share(CashInstrument):
     def value(self, share_price: float) -> float:
         return share_price
 
-    def __repr__(self) -> str:
-        return f"Share_{self.ticker_symbol}"
-
 
 class Stock(CashInstrument):
 
@@ -46,6 +43,3 @@ class Stock(CashInstrument):
 
     def value(self, share_price: float) -> float:
         return self.share.value(share_price) * self.number_of_shares
-
-    def __repr__(self) -> str:
-        return f"Stock_{self.share.ticker_symbol}_{self.number_of_shares}"

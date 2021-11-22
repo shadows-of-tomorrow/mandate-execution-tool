@@ -7,8 +7,8 @@ from abc import ABC, abstractmethod
 
 from economy.base import Economy
 
-class InstrumentLevel1(Enum):
 
+class InstrumentLevel1(Enum):
     Cash = "Cash"
     Derivative = "Derivative"
 
@@ -17,7 +17,6 @@ class InstrumentLevel1(Enum):
 
 
 class InstrumentLevel2(Enum):
-
     Equity = "Equity"
     Debt = "Debt"
     InterestRate = "InterestRate"
@@ -28,7 +27,6 @@ class InstrumentLevel2(Enum):
 
 
 class InstrumentLevel3(Enum):
-
     Share = "Share"
     Stock = "Stock"
     ZeroCouponBond = "ZeroCouponBond"
@@ -62,7 +60,6 @@ class Instrument(ABC):
             instrument_level_3: InstrumentLevel3,
             tradeable: bool
     ) -> None:
-
         self.quote_currency = quote_currency
         self.instrument_level_1 = instrument_level_1
         self.instrument_level_2 = instrument_level_2
@@ -75,8 +72,4 @@ class Instrument(ABC):
 
     @abstractmethod
     def value(self, *args, **kwargs) -> float:
-        pass
-
-    @abstractmethod
-    def __repr__(self):
         pass

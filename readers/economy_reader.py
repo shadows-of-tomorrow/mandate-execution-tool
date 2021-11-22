@@ -11,7 +11,7 @@ from economy.observables.share_price import SharePrice
 from economy.term_structures.yield_curve import YieldCurve
 
 
-class EconomyFactory:
+class EconomyReader:
 
     def __init__(self) -> None:
         self.date_helper = DateHelper()
@@ -19,7 +19,7 @@ class EconomyFactory:
         self.exchange_rate_csv = "exchange_rates.csv"
         self.share_price_csv = "share_prices.csv"
 
-    def create_economy(self, current_date: datetime, economy_path: str) -> Economy:
+    def read_economy(self, current_date: datetime, economy_path: str) -> Economy:
         yield_curves = self._read_yield_curves(economy_path)
         exchange_rates = self._read_exchange_rates(economy_path)
         share_prices = self._read_share_prices(economy_path)
@@ -45,7 +45,6 @@ class EconomyFactory:
         exchange_rates = fx_df.groupby(by="Identifier").apply(self._construct_exchange_rate)
         exchange_rates = dict(exchange_rates)
         return exchange_rates
-
 
     def _construct_exchange_rate(self, fx_df: pd.DataFrame) -> ExchangeRate:
         base_currency = fx_df.iloc[0, 1]
