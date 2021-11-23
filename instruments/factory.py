@@ -44,8 +44,8 @@ class InstrumentFactory:
         return Share(quote_currency=quote_currency, ticker_symbol=ticker_symbol)
 
     @staticmethod
-    def _create_stock(quote_currency: str, ticker_symbol: str, number_of_shares: int) -> Stock:
-        return Stock(quote_currency=quote_currency, ticker_symbol=ticker_symbol, number_of_shares=number_of_shares)
+    def _create_stock(quote_currency: str, ticker_symbol: str, notional: int) -> Stock:
+        return Stock(quote_currency=quote_currency, ticker_symbol=ticker_symbol, notional=notional)
 
     @staticmethod
     def _create_zero_coupon_bond(quote_currency: str, discount_curve_id: str, notional: int,

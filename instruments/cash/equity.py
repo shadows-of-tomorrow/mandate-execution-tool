@@ -26,7 +26,7 @@ class Share(CashInstrument):
 
 class Stock(CashInstrument):
 
-    def __init__(self, quote_currency: str, ticker_symbol: str, number_of_shares: int) -> None:
+    def __init__(self, quote_currency: str, ticker_symbol: str, notional: int) -> None:
 
         super().__init__(
             instrument_level_2=InstrumentLevel2.Equity,
@@ -35,11 +35,11 @@ class Stock(CashInstrument):
         )
 
         self.share = Share(quote_currency=quote_currency, ticker_symbol=ticker_symbol)
-        self.number_of_shares = number_of_shares
+        self.notional = notional
 
     def value_from_economy(self, economy: Economy) -> float:
         share_price = economy.share_prices[self.share.ticker_symbol].value
         return self.value(share_price)
 
     def value(self, share_price: float) -> float:
-        return self.share.value(share_price) * self.number_of_shares
+        return self.share.value(share_price) * self.notional

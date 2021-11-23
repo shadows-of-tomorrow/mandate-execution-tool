@@ -7,6 +7,7 @@ from readers.economy_reader import EconomyReader
 from readers.portfolio_reader import PortfolioReader
 from readers.mandate_reader import MandateReader
 from trading.trader import Trader
+from trading.environment import TradingEnvironment
 
 CURRENT_DATE = datetime.now()
 
@@ -27,8 +28,6 @@ def load_mandate():
 
 
 if __name__ == "__main__":
-    portfolio, mandate = load_portfolio(), load_mandate()
-    trader = Trader(mandate=mandate, portfolio=portfolio)
-    economy = load_economy()
-    mandate = trader.check_mandate(economy)
-    print(mandate)
+    portfolio, mandate, economy = load_portfolio(), load_mandate(), load_economy()
+    env = TradingEnvironment(mandate=mandate, economy=economy, portfolio=portfolio)
+    trader = Trader(env)

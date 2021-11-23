@@ -1,3 +1,3 @@
 ﻿Identifier,Instrument Type,Discount Curve Quote,Discount Curve Base,Forecast Curve Quote,Forecast Curve Base,Notional,Start Date,Maturity Date,Quote Currency,Base Currency,Ticker Symbol
-dummy_1,Share,,,,,,,,EUR,,SX5E
+dummy_1,Stock,,,,,0.01,,,EUR,,SX5E
 dummy_2,ZeroCouponBond,EUR_EONIA_1D,,,,10000,1/1/2020,1/1/2030,EUR,,

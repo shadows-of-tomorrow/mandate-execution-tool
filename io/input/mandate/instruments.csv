@@ -1,8 +1,7 @@
-﻿Identifier,ExposureType,Curve,Tenor,Target
-Asset Allocation Equity (%),AssetAllocationEquity,,,0.5
-Asset Allocation Debt (%),AssetAllocationDebt,,,0.5
-EONIA Zero Delta 1M,ZeroDelta,EUR_EONIA_1D,0.083333333,1000
-EONIA Zero Delta 2M,ZeroDelta,EUR_EONIA_1D,0.166666667,100000
-EONIA Zero Delta 3M,ZeroDelta,EUR_EONIA_1D,0.25,100000
-EONIA Zero Delta 6M,ZeroDelta,EUR_EONIA_1D,0.5,200000
-EONIA Zero Delta 12M,ZeroDelta,EUR_EONIA_1D,1,400000
+﻿Identifier,Instrument Type,Quote Currency,Discount Curve, Tenor ,Ticker Symbol
+EUR STOCK SX5E,Stock,EUR,,,SX5E
+EUR ZCB 1M,ZeroCouponBond,EUR,EUR_EONIA_1D,1M,
+EUR ZCB 2M,ZeroCouponBond,EUR,EUR_EONIA_1D,2M,
+EUR ZCB 3M,ZeroCouponBond,EUR,EUR_EONIA_1D,3M,
+EUR ZCB 6M,ZeroCouponBond,EUR,EUR_EONIA_1D,6M,
+EUR ZCB 12M,ZeroCouponBond,EUR,EUR_EONIA_1D,12M,

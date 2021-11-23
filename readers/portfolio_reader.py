@@ -12,7 +12,7 @@ class PortfolioReader:
         self.instrument_factory = InstrumentFactory()
 
     def read_portfolio(self, portfolio_path: str) -> Portfolio:
-        # Todo: Another very ugly reader.
+        # Todo: Another very ugly reader...
         instruments = []
         portfolio_path = os.path.join(portfolio_path, self.portfolio_csv)
         portfolio_df = pd.read_csv(portfolio_path)
