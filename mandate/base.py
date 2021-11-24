@@ -1,6 +1,3 @@
-"""
-A set of rules defining trade objectives.
-"""
 import numpy as np
 from typing import Dict, List, Tuple
 from exposures.base import Exposure
@@ -16,10 +13,10 @@ class Mandate:
         self.instrument_generators = instrument_generators
         self.n_instruments = len(self.instrument_generators)
         self.n_exposures = len(exposures_and_targets)
-        self.deviation_threshold = 100.0
         # Todo: Incorporate in mandate reader.
-        self.min_notional = -10000
-        self.max_notional = +10000
+        self.min_notional = -100000000000000
+        self.max_notional = +100000000000000
+        self.deviation_threshold = 1.0
 
     def exposure_deviations(self, portfolio: Portfolio, economy: Economy, as_array: bool = False) -> dict:
         deviation = {}
@@ -33,4 +30,4 @@ class Mandate:
 
     def abs_exposure_deviation(self, portfolio: Portfolio, economy: Economy) -> float:
         exposure_deviations = self.exposure_deviations(portfolio, economy, as_array=True)
-        return np.sum(np.abs(exposure_deviations))
+        return np.sum(np.square(exposure_deviations))

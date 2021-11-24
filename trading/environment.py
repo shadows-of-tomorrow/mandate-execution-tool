@@ -27,6 +27,8 @@ class TradingEnvironment(Env):
         self.old_total_exposure_deviation = self.init_total_exposure_deviation
         self.new_total_exposure_deviation = None
         self.state = self.init_exposure_deviations
+        self.targets = [x[1] for x in self.mandate.exposures_and_targets]
+        self.exposure_ids = [x[0].identifier for x in self.mandate.exposures_and_targets]
 
     def _get_observation_space(self) -> spaces:
         return spaces.Box(low=-1e30, high=1e30, shape=(self.mandate.n_exposures,))
@@ -35,24 +37,25 @@ class TradingEnvironment(Env):
         return spaces.Box(low=self.mandate.min_notional, high=self.mandate.max_notional,
                           shape=(self.mandate.n_instruments,))
 
-    def step(self, action: np.array = None):
-        if action is None:
-            action = self.action_space.sample()
+    def step(self, action):
         assert self.action_space.contains(action)
         self._trade_instruments(action)
         reward = self._compute_reward()
         self.state = self.mandate.exposure_deviations(self.portfolio, self.economy, as_array=True)
-        done = self._check_if_done()
+        done = self._check_is_done()
         return self.state, reward, done, {}
 
-    def _check_if_done(self):
-        done = False
-        if self.new_total_exposure_deviation < self.mandate.deviation_threshold:
-            done = True
-        return done
+    def _check_is_done(self) -> bool:
+        if self.new_total_exposure_deviation <= self.mandate.deviation_threshold:
+            return True
+        else:
+            return False
 
     def render(self, mode="human"):
-        print(self.state)
+        plt.clf()
+        plt.barh(self.exposure_ids, width=self.state)
+        plt.tight_layout()
+        plt.pause(0.00001)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)

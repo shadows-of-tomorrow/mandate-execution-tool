@@ -1,7 +1,7 @@
-﻿Identifier,Instrument Type,Quote Currency,Discount Curve, Tenor ,Ticker Symbol
-EUR STOCK SX5E,Stock,EUR,,,SX5E
+Identifier,Instrument Type,Quote Currency,Discount Curve, Tenor ,Ticker Symbol
 EUR ZCB 1M,ZeroCouponBond,EUR,EUR_EONIA_1D,1M,
 EUR ZCB 2M,ZeroCouponBond,EUR,EUR_EONIA_1D,2M,
 EUR ZCB 3M,ZeroCouponBond,EUR,EUR_EONIA_1D,3M,
 EUR ZCB 6M,ZeroCouponBond,EUR,EUR_EONIA_1D,6M,
-EUR ZCB 12M,ZeroCouponBond,EUR,EUR_EONIA_1D,12M,
+EUR ZCB 1Y,ZeroCouponBond,EUR,EUR_EONIA_1D,1Y,
+EUR ZCB 2Y,ZeroCouponBond,EUR,EUR_EONIA_1D,2Y,
