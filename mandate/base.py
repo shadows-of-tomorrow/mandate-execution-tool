@@ -15,6 +15,8 @@ class Mandate:
         self.exposures_and_targets = exposures_and_targets
         self.instrument_generators = instrument_generators
         self.n_instruments = len(self.instrument_generators)
+        self.n_exposures = len(exposures_and_targets)
+        self.deviation_threshold = 100.0
         # Todo: Incorporate in mandate reader.
         self.min_notional = -10000
         self.max_notional = +10000

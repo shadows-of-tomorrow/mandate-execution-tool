@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from gym import Env, spaces
+from gym.utils import seeding
+from copy import deepcopy
 
 from mandate.base import Mandate
 from economy.base import Economy
@@ -14,24 +16,22 @@ class TradingEnvironment(Env):
         self.mandate = mandate
         self.economy = economy
         self.portfolio = portfolio
-        self.action_space = self._create_action_space()
+        self.action_space = self._get_action_space()
+        self.observation_space = self._get_observation_space()
         # Used to reset environment.
-        self.init_economy = economy
-        self.init_portfolio = portfolio
+        self.init_economy = deepcopy(economy)
+        self.init_portfolio = deepcopy(portfolio)
         self.init_total_exposure_deviation = mandate.abs_exposure_deviation(portfolio, economy)
         self.init_exposure_deviations = mandate.exposure_deviations(portfolio, economy, as_array=True)
         # Trades happen in notional amounts.
         self.old_total_exposure_deviation = self.init_total_exposure_deviation
         self.new_total_exposure_deviation = None
-        self.max_episode_steps = 100
-        self.current_episode_steps = 0
         self.state = self.init_exposure_deviations
-        self.figure, self.ax = plt.subplots(figsize=(10, 10))
-        self.exposure_names = [x[0].identifier for x in mandate.exposures_and_targets]
-        self.ax.barh(self.exposure_names, width=self.state)
-        self.figure.suptitle("Mandate Deviations")
 
-    def _create_action_space(self) -> spaces:
+    def _get_observation_space(self) -> spaces:
+        return spaces.Box(low=-1e30, high=1e30, shape=(self.mandate.n_exposures,))
+
+    def _get_action_space(self) -> spaces:
         return spaces.Box(low=self.mandate.min_notional, high=self.mandate.max_notional,
                           shape=(self.mandate.n_instruments,))
 
@@ -42,21 +42,27 @@ class TradingEnvironment(Env):
         self._trade_instruments(action)
         reward = self._compute_reward()
         self.state = self.mandate.exposure_deviations(self.portfolio, self.economy, as_array=True)
-        return self.state, reward, False, {}
+        done = self._check_if_done()
+        return self.state, reward, done, {}
+
+    def _check_if_done(self):
+        done = False
+        if self.new_total_exposure_deviation < self.mandate.deviation_threshold:
+            done = True
+        return done
 
     def render(self, mode="human"):
-        self.ax.cla()
-        self.ax.barh(self.exposure_names, width=self.state)
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
+        print(self.state)
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
     def reset(self):
-        self.economy = self.init_economy
-        self.portfolio = self.init_portfolio
-        self.state = self.init_exposure_deviations
-        self.old_total_exposure_deviation = self.init_total_exposure_deviation
-        self.new_total_exposure_deviation = None
-        self.current_episode_steps = 0
+        self.economy = deepcopy(self.init_economy)
+        self.portfolio = deepcopy(self.init_portfolio)
+        self.state = deepcopy(self.init_exposure_deviations)
+        self.old_total_exposure_deviation = deepcopy(self.init_total_exposure_deviation)
         return self.state
 
     def _trade_instruments(self, action):
