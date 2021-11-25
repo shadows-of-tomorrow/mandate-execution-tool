@@ -5,7 +5,6 @@ will be flexible and can include stochastic scenarios or historical market data.
 """
 
 import os
-import torch
 from datetime import datetime
 
 from readers.economy_reader import EconomyReader
@@ -35,23 +34,12 @@ def load_mandate():
 
 
 def get_environment():
-    portfolio, mandate, economy = load_portfolio(), load_mandate(), load_economy()
+    from instruments.portfolio import Portfolio
+    portfolio, mandate, economy = Portfolio(), load_mandate(), load_economy()
     return TradingEnvironment(mandate=mandate, economy=economy, portfolio=portfolio)
-
-
-def get_policy(env, from_file):
-    if from_file:
-        from ppo.network import FeedForwardNN
-        state_dim = env.observation_space.shape[0]
-        action_dim = env.action_space.shape[0]
-        policy = FeedForwardNN(state_dim, action_dim)
-        policy.load_state_dict(torch.load('./ppo_actor.pth'))
-    else:
-        policy = PolicyTrainer(env).learn_policy()
-    return policy
 
 
 if __name__ == "__main__":
     env = get_environment()
-    trade_policy = get_policy(env, from_file=False)
+    trade_policy = PolicyTrainer(env).learn_policy()
     Trader(env, trade_policy).evaluate_policy(render=True)

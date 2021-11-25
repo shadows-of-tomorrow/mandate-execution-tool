@@ -1,3 +1,3 @@
 Identifier,ExposureType,Curve,Tenor,Target
-EONIA Zero Delta 1Y,ZeroDelta,EUR_EONIA_1D,1,1000
-EONIA Zero Delta 2Y,ZeroDelta,EUR_EONIA_1D,2,1000
+Asset Allocation Debt,AssetAllocationDebt,,,1000
+Asset Allocation Equity,AssetAllocationEquity,,,300000

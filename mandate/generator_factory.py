@@ -5,10 +5,6 @@ from utils.dates import DateHelper
 
 
 class InstrumentGeneratorFactory:
-    """
-    A factory that generates instrument creation functions.
-    This integrates nicely with reinforcement learning methods.
-    """
 
     def __init__(self) -> None:
         self.instrument_factory = InstrumentFactory()

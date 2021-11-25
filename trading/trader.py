@@ -37,6 +37,9 @@ class Trader:
                 # Sum all episodic rewards as we go along
                 ep_ret += rew
 
+            if render:
+                self.env.render()
+
             # Track episodic length
             ep_len = t
 

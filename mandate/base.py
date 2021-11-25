@@ -9,25 +9,21 @@ from economy.base import Economy
 class Mandate:
 
     def __init__(self, exposures_and_targets: List[Tuple[Exposure, float]], instrument_generators) -> None:
-        self.exposures_and_targets = exposures_and_targets
+        self.exposures = [x[0] for x in exposures_and_targets]
+        self.targets = [x[1] for x in exposures_and_targets]
         self.instrument_generators = instrument_generators
         self.n_instruments = len(self.instrument_generators)
         self.n_exposures = len(exposures_and_targets)
-        # Todo: Incorporate in mandate reader.
-        self.min_notional = -100000000000000
-        self.max_notional = +100000000000000
-        self.deviation_threshold = 1.0
 
     def exposure_deviations(self, portfolio: Portfolio, economy: Economy, as_array: bool = False) -> dict:
         deviation = {}
-        for x in self.exposures_and_targets:
-            exposure, exposure_target = x[0], x[1]
+        for k in range(len(self.exposures)):
+            exposure, exposure_target = self.exposures[k], self.targets[k]
             exposure_portfolio = exposure.portfolio_exposure(portfolio, economy)
-            deviation[exposure.identifier] = (exposure_portfolio-exposure_target)
+            deviation[exposure.identifier] = self._get_deviation(exposure_portfolio, exposure_target)
         if as_array is True:
-            deviation = np.array(list(deviation.values()))
+            deviation = np.array(list(deviation.values())).reshape(-1, 1)
         return deviation
 
-    def abs_exposure_deviation(self, portfolio: Portfolio, economy: Economy) -> float:
-        exposure_deviations = self.exposure_deviations(portfolio, economy, as_array=True)
-        return np.sum(np.square(exposure_deviations))
+    def _get_deviation(self, exposure_portfolio, exposure_target):
+        return np.clip((exposure_portfolio+1e-6) / (exposure_target+1e-6) - 1.0, -1.0, 1.0)

@@ -4,18 +4,37 @@ import torch.nn.functional as F
 import numpy as np
 
 
-class FeedForwardNN(nn.Module):
+class ActorNN(nn.Module):
 
     def __init__(self, in_dim, out_dim):
-        super(FeedForwardNN, self).__init__()
+        super(ActorNN, self).__init__()
+        self.layer1 = nn.Linear(in_dim, 64)
+        self.layer2 = nn.Linear(64, 64)
+        self.layer3 = nn.Linear(64, out_dim * 3)
+        self.layer4 = nn.Linear(out_dim * 3, out_dim)
+
+    def forward(self, x):
+        if isinstance(x, np.ndarray):
+            x = torch.tensor(x, dtype=torch.float)
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        x = F.relu(self.layer3(x))
+        x = self.layer4(x)
+        return x
+
+
+class CriticNN(nn.Module):
+
+    def __init__(self, in_dim, out_dim):
+        super(CriticNN, self).__init__()
         self.layer1 = nn.Linear(in_dim, 64)
         self.layer2 = nn.Linear(64, 64)
         self.layer3 = nn.Linear(64, out_dim)
 
-    def forward(self, obs):
-        if isinstance(obs, np.ndarray):
-            obs = torch.tensor(obs, dtype=torch.float)
-        activation1 = F.relu(self.layer1(obs))
-        activation2 = F.relu(self.layer2(activation1))
-        output = self.layer3(activation2)
-        return output
+    def forward(self, x):
+        if isinstance(x, np.ndarray):
+            x = torch.tensor(x, dtype=torch.float)
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        x = self.layer3(x)
+        return x

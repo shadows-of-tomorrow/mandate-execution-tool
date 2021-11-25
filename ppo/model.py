@@ -8,10 +8,12 @@ import torch.nn as nn
 from torch.optim import Adam
 from torch.distributions import MultivariateNormal
 
+from ppo.network import ActorNN, CriticNN
+
 
 class PPO:
 
-    def __init__(self, policy_class, env, **hyperparameters):
+    def __init__(self, env, **hyperparameters):
         # Make sure the environment is compatible with our code
         assert (type(env.observation_space) == gym.spaces.Box)
         assert (type(env.action_space) == gym.spaces.Box)
@@ -25,15 +27,15 @@ class PPO:
         self.act_dim = env.action_space.shape[0]
 
         # Initialize actor and critic networks
-        self.actor = policy_class(self.obs_dim, self.act_dim)  # ALG STEP 1
-        self.critic = policy_class(self.obs_dim, 1)
+        self.actor = ActorNN(self.obs_dim, self.act_dim)  # ALG STEP 1
+        self.critic = CriticNN(self.obs_dim, 1)
 
         # Initialize optimizers for actor and critic
-        self.actor_optim = Adam(self.actor.parameters(), lr=self.lr)
-        self.critic_optim = Adam(self.critic.parameters(), lr=self.lr)
+        self.actor_optim = Adam(self.actor.parameters(), lr=self.lr_actor)
+        self.critic_optim = Adam(self.critic.parameters(), lr=self.lr_critic)
 
         # Initialize the covariance matrix used to query the actor for actions
-        self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
+        self.cov_var = torch.full(size=(self.act_dim,), fill_value=self.action_std_start ** 2)
         self.cov_mat = torch.diag(self.cov_var)
 
         # This logger will help us with printing out summaries of each iteration
@@ -43,19 +45,19 @@ class PPO:
             'i_so_far': 0,  # iterations so far
             'batch_lens': [],  # episodic lengths in batch
             'batch_rews': [],  # episodic returns in batch
-            'actor_losses': [],  # losses of actor network in current iteration
-            'exp_dev': []
+            'actor_losses': []  # losses of actor network in current iteration
         }
 
     def learn(self, total_timesteps):
-        print(f"-------------------- Learning Policy --------------------", flush=True)
+        print(f"-------------------- Learning Policy -----------------", flush=True)
         print(f"Timesteps Per Episode: {self.max_timesteps_per_episode}")
         print(f"Timesteps Per Batch: {self.timesteps_per_batch}")
         print(f"Timesteps Per Run: {total_timesteps}")
-        print(f"---------------------------------------------------------", flush=True)
+        print(f"------------------------------------------------------", flush=True)
         t_so_far = 0  # Timesteps simulated so far
         i_so_far = 0  # Iterations ran so far
         while t_so_far < total_timesteps:  # ALG STEP 2
+
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.rollout()  # ALG STEP 3
 
             # Calculate how many timesteps we collected this batch
@@ -105,6 +107,9 @@ class PPO:
             # Print a summary of our training so far
             self._log_summary()
 
+            # Adjust action variance.
+            self._decay_action_variance(t_so_far, total_timesteps)
+
             # Save our model if it's time
             if i_so_far % self.save_freq == 0:
                 torch.save(self.actor.state_dict(), './ppo_actor.pth')
@@ -118,7 +123,6 @@ class PPO:
         batch_rews = []
         batch_rtgs = []
         batch_lens = []
-        exp_devs = []
 
         # Episodic data. Keeps track of rewards per episode, will get cleared
         # upon each new episode
@@ -154,7 +158,6 @@ class PPO:
                 ep_rews.append(rew)
                 batch_acts.append(action)
                 batch_log_probs.append(log_prob)
-                exp_devs.append(self.env.new_total_exposure_deviation)
 
                 # If the environment tells us the episode is terminated, break
                 if done:
@@ -173,9 +176,14 @@ class PPO:
         # Log the episodic returns and episodic lengths in this batch.
         self.logger['batch_rews'] = batch_rews
         self.logger['batch_lens'] = batch_lens
-        self.logger['exp_dev'] = exp_devs
 
         return batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens
+
+    def _decay_action_variance(self, current_timestep, total_timesteps):
+        weight_timestep = current_timestep / total_timesteps
+        action_std = self.action_std_start * (1.0-weight_timestep) + self.action_std_end * weight_timestep
+        self.cov_var = torch.full(size=(self.act_dim,), fill_value=action_std ** 2)
+        self.cov_mat = torch.diag(self.cov_var)
 
     def compute_rtgs(self, batch_rews):
         # The rewards-to-go (rtg) per episode per batch to return.
@@ -232,9 +240,12 @@ class PPO:
         self.timesteps_per_batch = 4800
         self.max_timesteps_per_episode = 1600
         self.n_updates_per_iteration = 5
-        self.lr = 0.005
+        self.lr_actor = 0.0003
+        self.lr_critic = 0.001
         self.gamma = 0.95
         self.clip = 0.2
+        self.action_std_start = 0.60
+        self.action_std_end = 0.10
 
         # Miscellaneous parameters
         self.render = True
@@ -271,7 +282,6 @@ class PPO:
         avg_ep_lens = str(round(avg_ep_lens, 2))
         avg_ep_rews = str(round(avg_ep_rews, 2))
         avg_actor_loss = str(round(avg_actor_loss, 5))
-        avg_exp_dev = round(self.logger['exp_dev'][-1], 2)
 
         # Print logging statements
         print(flush=True)
@@ -279,7 +289,6 @@ class PPO:
         print(f"Average Episodic Length: {avg_ep_lens}", flush=True)
         print(f"Average Episodic Return: {avg_ep_rews}", flush=True)
         print(f"Average Loss: {avg_actor_loss}", flush=True)
-        print(f"Terminal Exposure Deviation: {avg_exp_dev}", flush=True)
         print(f"Timesteps So Far: {t_so_far}", flush=True)
         print(f"Iteration took: {delta_t} secs", flush=True)
         print(f"------------------------------------------------------", flush=True)
@@ -289,4 +298,3 @@ class PPO:
         self.logger['batch_lens'] = []
         self.logger['batch_rews'] = []
         self.logger['actor_losses'] = []
-        self.logger['exp_dev'] = []
