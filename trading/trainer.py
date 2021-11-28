@@ -1,39 +1,33 @@
-from ppo.model import PPO
-from ppo.network import ActorNN
-from trading.environment import TradingEnvironment, ParallelTradingEnvironment
-
-HYPERPARAMETERS = {
-    'timesteps_per_batch': 2048,
-    'max_timesteps_per_episode': 10000,
-    'gamma': 0.95,
-    'n_updates_per_iteration': 10,
-    'lr_actor': 0.0003,
-    'lr_critic': 0.0003,
-    'action_std_start': 10.00,
-    'action_std_end': 0.10,
-    'clip': 0.2,
-    'render': False,
-    'render_every_i': 10
-}
+from ppo.optimizer import ProximalPolicyOptimization
+from ppo.networks import ActorNN
+from trading.environment import TradingEnvironment
 
 
 class TrainingConfig:
 
     def __init__(self) -> None:
-        self.workers = 1  # Todo: Fix parallel computing.
-        self.total_timesteps = 2_000_000
-        self.hyperparameters = HYPERPARAMETERS
+        self.total_timesteps = 1_000_000
+        self.actors = 4
+        self.steps_per_rollout = 600
+        self.steps_per_episode = 1000
+        self.updates_per_iteration = 40
+        self.gamma = 0.99
+        self.lr_actor = 0.0003
+        self.lr_critic = 0.0003
+        self.action_std_start = 0.60
+        self.action_std_end = 0.10
+        self.clip = 0.2
 
 
 class PolicyTrainer:
 
     def __init__(self, env: TradingEnvironment, config: TrainingConfig = TrainingConfig()) -> None:
+        self.env = env
         self.config = config
-        self.env = self._construct_env(env)
         self.model = self._get_ppo_model()
 
     def learn_policy(self) -> ActorNN:
-        self.model.learn(total_timesteps=self.config.total_timesteps)
+        self.model.learn(total_steps=self.config.total_timesteps)
         return self._get_policy()
 
     def _get_policy(self) -> ActorNN:
@@ -44,10 +38,4 @@ class PolicyTrainer:
         return policy
 
     def _get_ppo_model(self):
-        return PPO(env=self.env, **self.config.hyperparameters)
-
-    def _construct_env(self, env: TradingEnvironment):
-        if self.config.workers > 1:
-            envs = [env for _ in range(self.config.workers)]
-            env = ParallelTradingEnvironment(envs)
-        return env
+        return ProximalPolicyOptimization(env=self.env, config=self.config)

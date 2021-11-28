@@ -10,16 +10,14 @@ class ActorNN(nn.Module):
         super(ActorNN, self).__init__()
         self.layer1 = nn.Linear(in_dim, 64)
         self.layer2 = nn.Linear(64, 64)
-        self.layer3 = nn.Linear(64, out_dim * 3)
-        self.layer4 = nn.Linear(out_dim * 3, out_dim)
+        self.layer3 = nn.Linear(64, out_dim)
 
     def forward(self, x):
         if isinstance(x, np.ndarray):
             x = torch.tensor(x, dtype=torch.float)
         x = F.relu(self.layer1(x))
         x = F.relu(self.layer2(x))
-        x = F.relu(self.layer3(x))
-        x = self.layer4(x)
+        x = self.layer3(x)
         return x
 
 

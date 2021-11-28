@@ -11,40 +11,22 @@ class Trader:
         self.eval_policy(render)
 
     def rollout(self, render):
-        # Rollout until user kills process
         while True:
-            obs = self.env.reset()
-            done = False
-
-            # number of timesteps so far
-            t = 0
-
-            # Logging data
-            ep_len = 0  # episodic length
-            ep_ret = 0  # episodic return
-
+            obs, done = self.env.reset(), False
+            steps, ep_ret, ep_len = 0, 0, 0
             while not done:
-                t += 1
-
-                # Render environment if specified, off by default
-                if render:
-                    self.env.render()
-
-                # Query deterministic action from policy and run it
+                steps += 1
+                self._render(render)
                 action = self.policy(obs).detach().numpy()
                 obs, rew, done, _ = self.env.step(action)
-
-                # Sum all episodic rewards as we go along
                 ep_ret += rew
-
-            if render:
-                self.env.render()
-
-            # Track episodic length
-            ep_len = t
-
-            # returns episodic length and return in this iteration
+            self._render(render)
+            ep_len = steps
             yield ep_len, ep_ret
+
+    def _render(self, render):
+        if render:
+            self.env.render()
 
     def _log_summary(self, ep_len, ep_ret, ep_num):
         ep_len = str(round(ep_len, 2))
